@@ -155,8 +155,8 @@ function prefixLengthToSubnetMask(prefix_length) {
 }
 
 function subnetInformation(octet_border, prefix_length = 32) {
-    if (prefix_length > 32) throw new Error('Invalid prefix length.');
-    if (!(octet_border % 8 == 0) || octet_border < 8 || octet_border > 32) throw new Error('Invalid octet border.');
+    if (prefix_length > 32 || prefix_length < 0) throw new InvalidOctetBorderPrefixLengthError(prefix_length);
+    if (!(octet_border % 8 == 0) || octet_border < 8 || octet_border > 32) throw new InvalidOctetBorderPrefixLengthError(octet_border);
     let obj = {};
     obj.host_bits_allocated = 32 - octet_border;
     obj.host_bits_borrowed = prefix_length - octet_border;
