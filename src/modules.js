@@ -206,7 +206,6 @@ function subnetInformation(network_prefix, subnet_prefix = 32) { // pretty ! may
 
 export {
     validateDottedAddress,
-    // validateIPv4Range,
     validateMACAddress,
     dottedDecimalToBinary,
     dottedBinaryToDecimal,
