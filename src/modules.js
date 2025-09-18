@@ -1,9 +1,19 @@
-import { InvalidIPv4AddressError } from "./errors";
-import { InvalidMACAddressError } from "./errors";
-import { InvalidNetworkPrefixError } from "./errors";
-import { InvalidSubnetMaskError } from "./errors";
-import { InvalidSubnetPrefixError } from "./errors";
-import { softError } from "./errors";
+import { InvalidIPv4AddressError, MalformedInputError } from "./errors.js";
+import { InvalidMACAddressError } from "./errors.js";
+import { InvalidNetworkPrefixError } from "./errors.js";
+import { InvalidSubnetMaskError } from "./errors.js";
+import { InvalidSubnetPrefixError } from "./errors.js";
+
+/**
+ * Gracefully error.
+ * @param {Error} e The error in question, you bumbling dumbfuck!
+ * @returns false, as evidenced by the code below.
+ */
+
+function softError(e) {
+    console.error(e);
+    return false;
+}
 
 /**
  * Validates a MAC Address.
@@ -50,7 +60,7 @@ function validateDottedAddress(dotted_address, binary = false, subnet_mask = fal
         let tmp_subnet_mask_padded = tmp_subnet_mask.split('.').map((x) => x.padEnd(8, '0')).join('.'); // already know this will pass tests from earlier
         if (tmp_subnet_mask_padded.match(/0.*1/g)) return softError(new InvalidSubnetMaskError(tmp_subnet_mask_padded, binary));
     }
-    console.log(dotted_address);
+    // console.log(dotted_address);
     return dotted_address;
 }
 
@@ -164,22 +174,22 @@ function getNetworkAddress(ip_address, subnet_mask) {
 /**
  * Collection of useful calculations. Can be chained with other things, such as subnetMaskToPrefixLength.
  * @param {number} network_prefix The Network Prefix.
- * @param {number} subet_prefix The Subnet Prefix.
+ * @param {number} subnet_prefix The Subnet Prefix.
  * @returns {object} Summary of useful information.
  */
 
-function subnetInformation(network_prefix, subet_prefix = 32) { // pretty ! may rename to 'calculatehosts' or something, as other functions obsolete much of this code.
-    if (subet_prefix > 32 || subet_prefix < 0) throw new InvalidSubnetPrefixError(subet_prefix);
+function subnetInformation(network_prefix, subnet_prefix = 32) { // pretty ! may rename to 'calculatehosts' or something, as other functions obsolete much of this code.
+    if (subnet_prefix > 32 || subnet_prefix < 0) throw new InvalidSubnetPrefixError(subnet_prefix);
     if (!(network_prefix % 8 == 0) || network_prefix < 8 || network_prefix > 32) throw new InvalidNetworkPrefixError(network_prefix);
     // if (!(network_prefix % 8 == 0) || network_prefix < 8 || network_prefix > 32) throw new InvalidOctetBorderError(network_prefix);
     let obj = {};
     obj.host_bits_allocated = 32 - network_prefix;
-    obj.host_bits_borrowed = subet_prefix - network_prefix;
-    if (host_bits_borrowed < 0) throw new Error("Idrk what to tell you");
+    obj.host_bits_borrowed = subnet_prefix - network_prefix;
+    if (obj.host_bits_borrowed < 0) throw new MalformedInputError(`network_prefix: ${network_prefix}, subnet_prefix: ${subnet_prefix}`);
     obj.host_bits_remaining = obj.host_bits_allocated - obj.host_bits_borrowed;
     obj.subnet_count = 1 << obj.host_bits_borrowed;
-    obj.subnet_allocated_addresses = 1 << obj.host_bits_remaining
-    obj.subnet_allocated_hosts = obj.subnet_allocated_addresses - 2;
+    obj.allocated_addresses_per_subnet = 1 << obj.host_bits_remaining
+    obj.allocated_hosts_per_subnet = obj.allocated_addresses_per_subnet - 2;
     let subnet_mask_binary = '';
     for (let i = 0; i < 32; i++) {
         let on = i < network_prefix + obj.host_bits_borrowed;

@@ -34,9 +34,4 @@ class MalformedInputError extends Error {
     }
 }
 
-function softError(e) {
-    console.error(e);
-    return false;
-}
-
-export { InvalidIPv4AddressError, InvalidSubnetMaskError, InvalidNetworkPrefixError, InvalidSubnetPrefixError, InvalidMACAddressError, MalformedInputError, softError }
+export { InvalidIPv4AddressError, InvalidSubnetMaskError, InvalidNetworkPrefixError, InvalidSubnetPrefixError, InvalidMACAddressError, MalformedInputError }
