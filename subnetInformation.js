@@ -39,11 +39,11 @@ function softError(e) {
     return false;
 }
 
-/**
+/* /**
  * Takes in an IPv4 Range and checks if the Prefix Length is valid.
  * @param {string} ip_address_range IPv4 Range formatted such as 10.0.0.0/8
  * @returns {object} Min and Max value, # of hosts, # of addresses
- */
+ *\/
 
 function validateIPv4Range(ip_address_range) {
     if (!ip_address_range.match('/')) throw new MalformedInputError(ip_address_range);
@@ -73,8 +73,7 @@ function validateIPv4Range(ip_address_range) {
     // in this case, 10 should pass.
     // suppose you had a 10.0.0.0/2 as input. 2^2-1 = 3. This should fail.
     // suppose you had a 10.0.0.0/8. This program should return the range of ip addresses. (i.e. 10.0.0.0 - 10.255.255.255)
-
-}
+} */
 
 /**
  * Validates a MAC Address.
@@ -90,30 +89,56 @@ function validateMACAddress(mac_address) {
         console.log(octet_parsed);
         if (isNaN(octet_parsed) || octet_parsed > 255 || octet_parsed < 0) throw new InvalidMACAddressError(mac_address);
     });
+    //idrk how to validate a mac ngl
     return mac_address;
 }
+
+/**
+ * Validates various types of IPv4 Addresses. Supports Subnet Masks, and IPv4 Addresses, allows for Subnet Mask/Subnet Prefix Length validation, in both Decimal and Binary forms.
+ * @param {*} dotted_address The Dotted Decimal/Binary Address/Subnet Mask.
+ * @param {*} binary Set to true if using Binary form.
+ * @param {*} subnet_mask Set to true if this Dotted value is supposed to be a Subnet Mask.
+ * @returns dotted_address if valid.
+ */
 
 function validateDottedAddress(dotted_address, binary = false, subnet_mask = false) { // maybe also check for valid subnet masks.
     let octets = dotted_address.split('.');
     let error_type = subnet_mask ? InvalidSubnetMaskError : InvalidIPv4AddressError;
     if (octets.length !== 4) return softError(new error_type(dotted_address, binary));
-    octets.forEach((octet) => {
+    for (let octet of octets) {
         let octet_parsed = parseInt(octet, binary ? 2 : 10);
-        let octet_invalid = (binary == (octet.length !== 8)) || (!binary && (octet.length < 1 || octet.length > 3)) || isNaN(octet_parsed) || octet_parsed > 255 || octet_parsed < 0;
-        if (octet_invalid) return softError(new error_type(dotted_address, binary));
-    });
-    if (subnet_mask && dotted_address.match(/0.*1/g)) softError(new InvalidSubnetMaskError(dotted_address, binary)); // this is separate because I want to make sure the stack evals to here before
+        let octet_valid = octet.length >= 1 && octet.length <= (binary ? 8 : 3) && !isNaN(octet_parsed) && octet_parsed <= 255 && octet_parsed >= 0;
+        if (!octet_valid) return softError(new error_type(dotted_address, binary));
+    };
+    // I guess I'd allow shit like 11111111.111.0.0 as a binary subnet mask, but that's so dumb and impractical why would anyone do that?
+    if (subnet_mask) {
+        let tmp_subnet_mask = binary ? dotted_address : dottedDecimalToBinary(dotted_address);
+        let tmp_subnet_mask_padded = tmp_subnet_mask.split('.').map((x) => x.padStart(8, '0')).join('.'); // already know this will pass tests from earlier
+        if (tmp_subnet_mask_padded.match(/0.*1/g)) return softError(new InvalidSubnetMaskError(tmp_subnet_mask_padded, binary));
+    }
     return dotted_address;
 }
 
-function dottedDecimalToBinary(dotted_decimal) {
-    validateDottedAddress(dotted_decimal);
+/**
+ * Converts Dotted Decimal to Dotted Binary.
+ * @param {*} dotted_decimal Dotted Decimal. 
+ * @returns Dotted Binary.
+ */
+
+function dottedDecimalToBinary(dotted_decimal, subnet_mask = false) {
+    validateDottedAddress(dotted_decimal, false, subnet_mask);
     let ip_binary = dotted_decimal.split('.').map((decimal) => parseInt(decimal, 10).toString(2).padStart(8, '0'));
     return ip_binary.join('.');
 }
 
-function dottedBinaryToDecimal(dotted_binary) {
-    validateDottedAddress(dotted_binary, true, false);
+/**
+ * Converts Dotted Binary to Dotted Decimal.
+ * @param {*} dotted_decimal Dotted Binary. 
+ * @returns Dotted Decimal.
+ */
+
+function dottedBinaryToDecimal(dotted_binary, subnet_mask = false) {
+    validateDottedAddress(dotted_binary, true, subnet_mask);
     let ip_dotted_decimal = dotted_binary.split('.').map((byte) => parseInt(byte, 2).toString(10)).join('.');
     return ip_dotted_decimal;
 }
@@ -125,14 +150,12 @@ function dottedBinaryToDecimal(dotted_binary) {
  */
 
 function subnetMaskToPrefixLength(subnet_mask) {
-    validateDottedAddress(subnet_mask, false, true);
-    let subnet_mask_binary = dottedDecimalToBinary(subnet_mask);
+    validateDottedAddress(subnet_mask, false, true); // check if this specifically is a valid subnet_mask first.
+    let subnet_mask_binary = dottedDecimalToBinary(subnet_mask); // includes extra check, annoying.
     let prefix_length = subnet_mask_binary.match(/1/g)?.length;
     prefix_length ??= 0;
     return prefix_length;
 }
-
-// download the map of the internet as desktop wallpaper.
 
 /**
  * Convert an IPv4 Prefix Length into a Subnet Mask.
@@ -147,7 +170,7 @@ function prefixLengthToSubnetMask(prefix_length) {
         subnet_mask_binary += on ? '1' : '0';
         if (i < 31 && (i + 1) % 8 == 0) subnet_mask_binary += '.';
     }
-    let subnet_mask = dottedBinaryToDecimal(subnet_mask_binary);
+    let subnet_mask = dottedBinaryToDecimal(subnet_mask_binary); // includes validation check
     return subnet_mask;
 }
 
