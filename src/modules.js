@@ -26,7 +26,6 @@ function validateMACAddress(mac_address) {
     if (mac_address_octets.length !== 6) throw new InvalidMACAddressError(mac_address);
     mac_address_octets.forEach((octet) => {
         let octet_parsed = parseInt(octet, 16);
-        console.log(octet_parsed);
         if (isNaN(octet_parsed) || octet_parsed > 255 || octet_parsed < 0) throw new InvalidMACAddressError(mac_address);
     });
     //idrk how to validate a mac ngl
