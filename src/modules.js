@@ -212,8 +212,6 @@ export {
     dottedBinaryToDecimal,
     subnetMaskToPrefixLength,
     prefixLengthToSubnetMask,
-    EUI_64,
-    IPv6DoubleColon,
     getNetworkAddress,
     subnetInformation
 }
